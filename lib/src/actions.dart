@@ -7,9 +7,15 @@ import 'waiter.dart';
 int _nextPointer = 100;
 
 Offset _getCenter(Element element) {
-  final renderBox = element.findRenderObject() as RenderBox;
-  final topLeft = renderBox.localToGlobal(Offset.zero);
-  return topLeft + Offset(renderBox.size.width / 2, renderBox.size.height / 2);
+  final renderObject = element.findRenderObject();
+  if (renderObject is! RenderBox || !renderObject.hasSize) {
+    throw StateError(
+      'Cannot get center of ${element.widget.runtimeType}: '
+      'render object is ${renderObject.runtimeType}',
+    );
+  }
+  final topLeft = renderObject.localToGlobal(Offset.zero);
+  return topLeft + Offset(renderObject.size.width / 2, renderObject.size.height / 2);
 }
 
 /// Simulate a tap on an element.

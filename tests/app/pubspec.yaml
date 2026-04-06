@@ -9,4 +9,4 @@ dependencies:
   flutter:
     sdk: flutter
   fdb:
-    path: ../
+    path: ../../

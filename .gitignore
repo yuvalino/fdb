@@ -5,9 +5,9 @@ build/
 pubspec.lock
 
 # Flutter test app
-test_app/build/
-test_app/linux/flutter/ephemeral/
-test_app/pubspec.lock
+tests/app/build/
+tests/app/linux/flutter/ephemeral/
+tests/app/pubspec.lock
 
 # Python
 __pycache__/
