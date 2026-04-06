@@ -1,0 +1,11 @@
+name: fdb
+description: Flutter Debug Bridge. HTTP remote test driver for Flutter apps.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter

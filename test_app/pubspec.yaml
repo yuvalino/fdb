@@ -1,0 +1,12 @@
+name: fdb_test_app
+description: Minimal Flutter app for testing FDB.
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  fdb:
+    path: ../
