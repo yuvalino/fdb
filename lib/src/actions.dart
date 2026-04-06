@@ -62,10 +62,15 @@ Future<void> performEnterText(Element element, String text) async {
     throw StateError('No EditableTextState found in subtree of ${element.widget.runtimeType}');
   }
 
-  editableState!.updateEditingValue(TextEditingValue(
+  // Use the controller directly to avoid Overlay.of() crash when the
+  // EditableText is not inside a full MaterialApp Overlay (e.g. login screen
+  // or contexts without a Navigator). updateEditingValue triggers selection
+  // handle display which requires Overlay.of(context).
+  final controller = editableState!.widget.controller;
+  controller.value = TextEditingValue(
     text: text,
     selection: TextSelection.collapsed(offset: text.length),
-  ));
+  );
 }
 
 /// Simulate a scroll (drag) gesture on an element.
