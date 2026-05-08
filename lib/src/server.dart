@@ -68,6 +68,8 @@ class FdbServer {
         await _handleWait(request);
       } else if (method == 'GET' && path == '/tree') {
         await _handleTree(request);
+      } else if (method == 'POST' && path == '/terminal-buffer') {
+        await _handleTerminalBuffer(request);
       } else {
         _errorResponse(request, 404, 'not_found', 'Unknown endpoint: $path');
       }
@@ -185,6 +187,51 @@ class FdbServer {
     final depth = depthParam != null ? int.tryParse(depthParam) ?? 50 : 50;
     final tree = dumpTree(maxDepth: depth);
     _jsonResponse(request, {'tree': tree});
+  }
+
+  Future<void> _handleTerminalBuffer(HttpRequest request) async {
+    final body = await _readJsonBody(request);
+    final key = body['key'] as String? ?? 'terminal_view';
+
+    final element = findOneElement(FindQuery(by: 'key', value: key));
+    if (element == null) {
+      _errorResponse(
+          request, 404, 'not_found', 'No widget with key "$key" found');
+      return;
+    }
+
+    try {
+      // Access xterm's TerminalView.terminal via dynamic dispatch so FDB
+      // doesn't need a compile-time dependency on the xterm package.
+      final dynamic widget = element.widget;
+      final dynamic terminal = widget.terminal;
+      final int width = terminal.viewWidth as int;
+      final int height = terminal.viewHeight as int;
+      final dynamic buffer = terminal.buffer;
+      final int lineCount = buffer.lines.length as int;
+
+      final lines = <String>[];
+      for (int i = 0; i < lineCount; i++) {
+        final dynamic line = buffer.lines[i];
+        final int trimLen = line.getTrimmedLength(width) as int;
+        final buf = StringBuffer();
+        for (int c = 0; c < trimLen; c++) {
+          final int cp = line.getCodePoint(c) as int;
+          buf.writeCharCode(cp == 0 ? 0x20 : cp);
+        }
+        lines.add(buf.toString());
+      }
+
+      _jsonResponse(request, {
+        'width': width,
+        'height': height,
+        'lines': lines,
+        'lineCount': lineCount,
+      });
+    } catch (e) {
+      _errorResponse(request, 500, 'internal',
+          'Failed to read terminal buffer: $e');
+    }
   }
 
   void _jsonResponse(HttpRequest request, Map<String, dynamic> data) {

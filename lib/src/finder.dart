@@ -50,7 +50,11 @@ bool _matches(Element element, FindQuery query) {
     case 'text':
       return _extractDirectText(element)?.contains(query.value) ?? false;
     case 'type':
-      return element.widget.runtimeType.toString() == query.value;
+      final typeName = element.widget.runtimeType.toString();
+      if (typeName == query.value) return true;
+      // Match private Flutter types (e.g., "BackButton" matches "_BackButton")
+      if (typeName.startsWith('_') && typeName.substring(1) == query.value) return true;
+      return false;
     default:
       return false;
   }
