@@ -126,7 +126,9 @@ void _collectText(Element element, StringBuffer buffer) {
   element.visitChildren((child) => _collectText(child, buffer));
 }
 
-/// Get the screen bounds of an element's render object.
+/// Get the screen bounds of an element's render object, or null when it has
+/// none: no laid-out box, or one under a transform that leaves it nowhere (a
+/// scale of 0 mid-animation gives NaN, which JSON can't carry).
 Map<String, double>? getBounds(Element element) {
   final renderObject = element.findRenderObject();
   if (renderObject is! RenderBox ||
@@ -136,6 +138,7 @@ Map<String, double>? getBounds(Element element) {
   }
   final topLeft = renderObject.localToGlobal(Offset.zero);
   final size = renderObject.size;
+  if (!topLeft.isFinite || !size.isFinite) return null;
   return {
     'x': topLeft.dx,
     'y': topLeft.dy,

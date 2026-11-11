@@ -60,6 +60,11 @@ _Target _target(Element element) {
   }
   final view = node.flutterView;
   final position = box.localToGlobal(box.size.center(Offset.zero));
+  if (!position.isFinite) {
+    throw FrtException(409, 'no_box',
+        '${_describe(element)} has no place on screen (a transform such as a '
+        'scale of 0 leaves it nowhere)');
+  }
   final result = HitTestResult();
   WidgetsBinding.instance.hitTestInView(result, position, view.viewId);
   if (!result.path.any((entry) => entry.target == box)) {

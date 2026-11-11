@@ -24,6 +24,9 @@
   and refuses read-only fields.
 - Malformed requests answer 400 instead of 500, wrong methods 405, oversized
   bodies 413. Negative `index` is a 400.
+- Bounds that aren't finite (a box under a scale of 0, mid-animation) are
+  left out instead of failing the whole answer with a 500, and a gesture on
+  such a box answers 409 `no_box`.
 - `by: text` matches a `Text` once instead of again through its `RichText`;
   `by: key, value: "null"` no longer matches keyless widgets; `/tree` shows
   text field contents.
