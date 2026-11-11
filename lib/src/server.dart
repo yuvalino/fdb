@@ -92,6 +92,7 @@ class FrtServer {
     '/long-press': ('POST', _handleLongPress),
     '/wait': ('POST', _handleWait),
     '/tree': ('GET', _handleTree),
+    '/type': ('POST', _handleType),
     '/terminal-buffer': ('POST', _handleTerminalBuffer),
     '/terminal-input': ('POST', _handleTerminalInput),
     '/terminal-wait': ('POST', _handleTerminalWait),
@@ -257,6 +258,25 @@ class FrtServer {
         final duration =
             _msField(body, 'duration', _maxDurationMs) ?? defaultLongPressMs;
         return performLongPress(_findOne(query), durationMs: duration);
+      });
+
+  Future<void> _handleType(HttpRequest request) =>
+      _gestureEndpoint(request, (body, query) {
+        final text = _field<String>(body, 'text', 'a string') ?? '';
+        final backspace = _intField(body, 'backspace') ?? 0;
+        if (backspace < 0 || backspace > 10000) {
+          throw FrtException.badRequest('"backspace" must be 0 to 10000');
+        }
+        final actionName = _field<String>(body, 'action', 'a string');
+        final action =
+            actionName == null ? null : textInputAction(actionName);
+        if (actionName != null && action == null) {
+          throw FrtException.badRequest(
+              '"action" must be a TextInputAction name such as "done", '
+              'not "$actionName"');
+        }
+        return performType(_findOne(query),
+            text: text, backspace: backspace, action: action);
       });
 
   Future<void> _handleWait(HttpRequest request) async {

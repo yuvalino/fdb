@@ -96,6 +96,7 @@ so lower `settle` when that slows a test down.
 | `POST /find` | `by`, `value`, `index` | Matching widgets, with type, key, text and on-screen bounds |
 | `POST /tap` | `by`, `value`, `index`, `settle` | Taps the widget's centre |
 | `POST /enter-text` | `by`, `value`, `index`, `settle`, `text` | Taps a text field to focus it and replaces its text, firing `onChanged` |
+| `POST /type` | `by`, `value`, `index`, `settle`, `text`, `backspace`, `action` | Types as the platform keyboard does, into the text input client at or under the widget: `backspace` deletions, `text` one character per edit, then `action` (a `TextInputAction` name such as `done`). Works on any `TextInputClient`, not only text fields, and keeps what the field had |
 | `POST /scroll` | `by`, `value`, `index`, `settle`, `dx`, `dy` | Drags (by touch) from the widget's centre |
 | `POST /long-press` | `by`, `value`, `index`, `settle`, `duration` | Holds for `duration` ms (default 600, at most 60000) |
 | `POST /wait` | `by`, `value`, `index`, `timeout` | Waits up to `timeout` ms (default 5000, at most 600000) for a match; 408 if none |
@@ -126,7 +127,7 @@ Errors come back as `{"error": ..., "message": ...}` with a 4xx or 5xx status:
 400 for a malformed request, 404 when no widget matches, 405 for the wrong
 method, 408 for a `/wait` timeout, 413 for a body over 1 MiB, and 409 when an
 action can't be done: `not_hittable`, `not_editable` (no text field there, or
-a read-only one), `not_terminal`, `not_mounted`, `no_box` or `no_view`.
+a read-only one), `not_terminal`, `no_text_input`, `not_mounted`, `no_box` or `no_view`.
 
 ## Python client
 

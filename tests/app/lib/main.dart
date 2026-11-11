@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:frt/frt.dart';
 import 'package:xterm/xterm.dart';
 
@@ -100,6 +101,7 @@ class _TestPageState extends State<TestPage> {
               ),
             ),
           ),
+          const RawInput(key: Key('raw_input')),
           SizedBox(
             height: 120,
             child: TerminalView(
@@ -170,4 +172,78 @@ class TestShell {
       terminal.write('\x1b[?1049l');
     }
   }
+}
+
+/// A bare TextInputClient, no EditableText, of the kind terminal apps use for
+/// their keyboard: it shows a log of what it was sent.
+class RawInput extends StatefulWidget {
+  const RawInput({super.key});
+
+  @override
+  State<RawInput> createState() => _RawInputState();
+}
+
+class _RawInputState extends State<RawInput> with TextInputClient {
+  TextEditingValue _value = TextEditingValue.empty;
+  final _log = <String>[];
+
+  @override
+  TextEditingValue? get currentTextEditingValue => _value;
+
+  @override
+  AutofillScope? get currentAutofillScope => null;
+
+  @override
+  void updateEditingValue(TextEditingValue value) {
+    final before = _value.text;
+    setState(() {
+      if (value.text.length > before.length) {
+        _log.add('+${value.text.substring(before.length)}');
+      } else if (value.text.length < before.length) {
+        _log.add('-');
+      }
+      _value = value;
+    });
+  }
+
+  @override
+  void performAction(TextInputAction action) =>
+      setState(() => _log.add('!${action.name}'));
+
+  @override
+  void connectionClosed() {}
+
+  @override
+  void updateFloatingCursor(RawFloatingCursorPoint point) {}
+
+  @override
+  void showAutocorrectionPromptRect(int start, int end) {}
+
+  @override
+  void performPrivateCommand(String action, Map<String, dynamic> data) {}
+
+  @override
+  void insertTextPlaceholder(Size size) {}
+
+  @override
+  void removeTextPlaceholder() {}
+
+  @override
+  void showToolbar() {}
+
+  @override
+  void didChangeInputControl(
+      TextInputControl? oldControl, TextInputControl? newControl) {}
+
+  @override
+  void performSelector(String selectorName) {}
+
+  @override
+  void insertContent(KeyboardInsertedContent content) {}
+
+  @override
+  Widget build(BuildContext context) => Text(
+        'raw:${_log.join(' ')}',
+        key: const Key('raw_log'),
+      );
 }

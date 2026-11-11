@@ -215,6 +215,27 @@ class FrtClient:
             timeout=duration / 1000 + 300,
         )
 
+    async def type(
+        self,
+        by: str,
+        value: str,
+        text: str = "",
+        *,
+        backspace: int = 0,
+        action: str | None = None,
+        index: int | None = None,
+        settle: int | None = None,
+    ):
+        """Type into the text input client at or under a widget as the
+        keyboard does: ``backspace`` deletions, then ``text`` a character at
+        a time, then ``action`` (a TextInputAction name such as "done")."""
+        body = {**_query(by, value, index, settle), "text": text}
+        if backspace:
+            body["backspace"] = backspace
+        if action is not None:
+            body["action"] = action
+        await self._post("/type", body)
+
     # --- Waiting ---
 
     async def wait_for(

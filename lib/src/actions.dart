@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderView;
+import 'package:flutter/services.dart';
 
 import 'errors.dart';
 import 'waiter.dart';
@@ -270,4 +271,92 @@ Future<void> performLongPress(
         kind: kind,
         device: _device));
   });
+}
+
+TextInputClient? _findTextInputClient(Element root) {
+  TextInputClient? found;
+  void visit(Element el) {
+    if (found != null) return;
+    if (el is StatefulElement && el.state is TextInputClient) {
+      found = el.state as TextInputClient;
+      return;
+    }
+    el.visitChildren(visit);
+  }
+
+  visit(root);
+  return found;
+}
+
+/// The text input action named [name] (`done`, `newline`, `search`, ...),
+/// or null for an unknown name.
+TextInputAction? textInputAction(String name) {
+  for (final action in TextInputAction.values) {
+    if (action.name == name) return action;
+  }
+  return null;
+}
+
+/// Types into the text input client at or under [element] (an
+/// `EditableText`, or any widget whose state is a [TextInputClient]) the way
+/// the platform keyboard does: [backspace] deletions, then [text] one
+/// character per edit, then [action], each reported through the client's
+/// `updateEditingValue` and `performAction`. Unlike `/enter-text`, nothing
+/// is tapped and the field keeps what it had.
+Future<void> performType(
+  Element element, {
+  String text = '',
+  int backspace = 0,
+  TextInputAction? action,
+}) async {
+  final client = _findTextInputClient(element) ??
+      (throw FrtException(409, 'no_text_input',
+          'No text input client at or under ${_describe(element)}'));
+  if (client is EditableTextState) {
+    if (client.widget.readOnly) {
+      throw FrtException(409, 'not_editable',
+          'The text field under ${_describe(element)} is read-only');
+    }
+    // A keyboard types only into the focused field.
+    if (!client.widget.focusNode.hasFocus) {
+      client.widget.focusNode.requestFocus();
+      await settleFrames(timeout: _focusSettle);
+    }
+  }
+
+  // The value as it stands, with the cursor at the end when the client
+  // has no valid selection (TextEditingValue.empty has none), as a
+  // keyboard would put it.
+  TextEditingValue current() {
+    final value = client.currentTextEditingValue ?? TextEditingValue.empty;
+    if (value.selection.isValid) return value;
+    return value.copyWith(
+        selection: TextSelection.collapsed(offset: value.text.length));
+  }
+
+  for (var i = 0; i < backspace; i++) {
+    final value = current();
+    final selection = value.selection;
+    final TextEditingValue next;
+    if (!selection.isCollapsed) {
+      next = value.replaced(selection, '');
+    } else if (selection.start > 0) {
+      // One character back, a surrogate pair counting as one.
+      final before = value.text.substring(0, selection.start);
+      final start = before.characters.skipLast(1).string.length;
+      next = value.replaced(TextRange(start: start, end: selection.start), '');
+    } else {
+      // An empty field: the platform still reports the backspace as an
+      // edit some clients watch for; there is nothing to delete.
+      break;
+    }
+    client.updateEditingValue(next);
+  }
+
+  for (final char in text.characters) {
+    final value = current();
+    client.updateEditingValue(value.replaced(value.selection, char));
+  }
+
+  if (action != null) client.performAction(action);
 }

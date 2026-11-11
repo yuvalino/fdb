@@ -32,6 +32,9 @@
   joined `text`, the cursor and the alt-screen state; a wide character no
   longer gains a space after it. New `/terminal-input` types or pastes into
   a terminal, and `/terminal-wait` waits for text or a regex.
+- New `/type`: types into any `TextInputClient` the way the platform
+  keyboard does (characters one per edit, backspaces, an input action),
+  for apps with their own keyboard handling such as terminals.
 - Python client: re-reads the port file while connecting, closes its session
   on failure, takes `host`/`port`, uses `127.0.0.1`, and passes `index` on
   every call (and `settle` on actions), and has methods for the terminal
