@@ -43,9 +43,14 @@ class FrtServer {
 
   /// Where the port goes when neither `initFrt(portFile:)` nor
   /// `FRT_PORT_FILE` says: `/tmp/frt_port` on desktop, and the app's own
-  /// temporary directory on iOS and Android, where `/tmp` isn't writable.
+  /// temporary directory where `/tmp` isn't writable: iOS, Android, and a
+  /// sandboxed macOS app (which macOS marks with APP_SANDBOX_CONTAINER_ID).
   static String _defaultPortFile() {
-    if (Platform.isLinux || Platform.isMacOS) return '/tmp/frt_port';
+    final sandboxed = Platform.isMacOS &&
+        Platform.environment.containsKey('APP_SANDBOX_CONTAINER_ID');
+    if ((Platform.isLinux || Platform.isMacOS) && !sandboxed) {
+      return '/tmp/frt_port';
+    }
     return '${Directory.systemTemp.path}${Platform.pathSeparator}frt_port';
   }
 

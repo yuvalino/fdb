@@ -16,8 +16,9 @@ import 'src/server.dart';
 ///   frt has no authentication.
 /// - [port], else `FRT_PORT`, else 0: a free port the system picks.
 /// - [portFile], else `FRT_PORT_FILE`, else `/tmp/frt_port` on Linux and
-///   macOS and `frt_port` in the app's temporary directory elsewhere. The
-///   bound port is written there, and printed to the log.
+///   macOS and `frt_port` in the app's temporary directory elsewhere (iOS,
+///   Android, a sandboxed macOS app). The bound port is written there, and
+///   printed to the log.
 ///
 /// The returned future completes once the server is listening; await it to
 /// see errors such as a failed bind or a malformed `FRT_HOST`/`FRT_PORT`.

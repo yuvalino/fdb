@@ -10,8 +10,8 @@
   and `FRT_HOST` set the port and address when the parameters don't, so a
   test can turn frt on at launch. The port file is written
   after the server listens, atomically, and defaults to the app's temporary
-  directory on iOS and Android. A failed write is logged instead of stopping
-  the server.
+  directory on iOS, Android and in a sandboxed macOS app. A failed write is
+  logged instead of stopping the server.
 - `/wait` answers 408 on timeout, checks at least once, and times out even
   when the app produces no frames. Actions settle until the app stops
   scheduling frames, for up to `settle` ms (default 1000), instead of for at

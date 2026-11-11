@@ -63,7 +63,7 @@ iOS, `xcrun devicectl device process launch -e '{"FRT_PORT": "4800",
 The server listens on `$FRT_PORT` (or a free port), prints the port to the
 log, and writes it to `initFrt(portFile:)`, else `$FRT_PORT_FILE`, else
 `/tmp/frt_port` on Linux and macOS (`frt_port` in the app's temporary
-directory on iOS and Android).
+directory on iOS, Android and in a sandboxed macOS app).
 
 ```sh
 port=$(cat /tmp/frt_port)
