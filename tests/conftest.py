@@ -12,6 +12,7 @@ Then run tests:
 """
 
 import os
+import socket
 import subprocess
 import tempfile
 
@@ -43,6 +44,17 @@ def _find_binary():
     return None, None
 
 
+def _free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+# The app is told its port (FRT_PORT); it still writes it to the port file,
+# which the client reads.
+APP_PORT = _free_port()
+
+
 def pytest_configure(config):
     """Remove stale port file before session starts."""
     if os.path.exists(PORT_FILE):
@@ -60,7 +72,7 @@ def app_process():
             returncode=1,
         )
 
-    env = {**os.environ, "FRT_PORT_FILE": PORT_FILE}
+    env = {**os.environ, "FRT_PORT_FILE": PORT_FILE, "FRT_PORT": str(APP_PORT)}
     # The app's output goes to a file: a pipe nobody reads fills up and
     # blocks the app once it has logged a few dozen KB.
     log = open(APP_LOG, "wb")

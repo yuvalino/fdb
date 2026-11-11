@@ -34,9 +34,10 @@ class FrtServer {
   /// Starts the server once; later calls return the first call's future.
   static Future<void> start({
     required InternetAddress address,
+    required int port,
     String? portFile,
   }) {
-    return _starting ??= FrtServer._()._bind(address, portFile);
+    return _starting ??= FrtServer._()._bind(address, port, portFile);
   }
 
   /// Where the port goes when neither `initFrt(portFile:)` nor
@@ -47,8 +48,9 @@ class FrtServer {
     return '${Directory.systemTemp.path}${Platform.pathSeparator}frt_port';
   }
 
-  Future<void> _bind(InternetAddress address, String? portFile) async {
-    _httpServer = await HttpServer.bind(address, 0);
+  Future<void> _bind(
+      InternetAddress address, int requestedPort, String? portFile) async {
+    _httpServer = await HttpServer.bind(address, requestedPort);
     _httpServer.listen(_handleRequest);
     final port = _httpServer.port;
 

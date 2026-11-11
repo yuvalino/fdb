@@ -6,7 +6,9 @@
 - **Breaking:** `/tap` is a real pointer tap at the widget's centre instead of
   calling the first tap handler found near it, and gestures that wouldn't
   reach their widget fail with 409.
-- `initFrt()` returns a future and takes `portFile`. The port file is written
+- `initFrt()` returns a future and takes `port` and `portFile`; `FRT_PORT`
+  and `FRT_HOST` set the port and address when the parameters don't, so a
+  test can turn frt on at launch. The port file is written
   after the server listens, atomically, and defaults to the app's temporary
   directory on iOS and Android. A failed write is logged instead of stopping
   the server.

@@ -33,27 +33,37 @@ flutter pub add frt
 
 **2. Start it in the app**
 
+Start it when the test launches the app, so the build you test is the build
+you ship:
+
 ```dart
+import 'dart:io';
 import 'package:frt/frt.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (const bool.fromEnvironment('FRT')) initFrt();
+  if (Platform.environment.containsKey('FRT_PORT')) await initFrt();
   runApp(const MyApp());
 }
 ```
 
-Build with `--dart-define=FRT=true`, and keep frt out of builds that ship to
-users. It listens on loopback, so only the same machine can drive the app. To
-drive it from another machine, such as a phone from your desktop, call
-`initFrt(address: InternetAddress.anyIPv4)`; anyone on the network can then
-drive it, as frt has no authentication.
+Launched normally, the app never opens the socket. Or leave frt out of
+shipped builds altogether: `if (const bool.fromEnvironment('FRT'))` and
+`--dart-define=FRT=true`.
+
+It listens on loopback, so only the same machine can drive the app. To drive
+it from another machine, such as a phone from your desktop, launch it with
+`FRT_HOST=0.0.0.0` (or call `initFrt(address: InternetAddress.anyIPv4)`);
+anyone on the network can then drive it, as frt has no authentication. On
+iOS, `xcrun devicectl device process launch -e '{"FRT_PORT": "4800",
+"FRT_HOST": "0.0.0.0"}' <bundle id>` passes the variables.
 
 **3. Drive it**
 
-The server picks a free port, prints it to the log, and writes it to
-`initFrt(portFile:)`, else `$FRT_PORT_FILE`, else `/tmp/frt_port` on Linux and
-macOS (`frt_port` in the app's temporary directory on iOS and Android).
+The server listens on `$FRT_PORT` (or a free port), prints the port to the
+log, and writes it to `initFrt(portFile:)`, else `$FRT_PORT_FILE`, else
+`/tmp/frt_port` on Linux and macOS (`frt_port` in the app's temporary
+directory on iOS and Android).
 
 ```sh
 port=$(cat /tmp/frt_port)
