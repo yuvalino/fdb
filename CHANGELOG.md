@@ -32,7 +32,8 @@
   text field contents.
 - Terminals: `/terminal-buffer` finds the terminal by any query, can keep
   only the rows in view or from a line on, and answers soft-wrap flags, the
-  joined `text`, the cursor and the alt-screen state; a wide character no
+  joined `text`, the cursor, the alt-screen state and the lines the view
+  is scrolled to (`view`); a wide character no
   longer gains a space after it. New `/terminal-input` types or pastes into
   a terminal, and `/terminal-wait` waits for text or a regex.
 - New `/type`: types into any `TextInputClient` the way the platform

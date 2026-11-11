@@ -105,3 +105,28 @@ async def test_both_text_and_pattern_is_400(frt: FrtClient):
     with pytest.raises(FrtError) as exc_info:
         await frt.terminal_wait("a", pattern="b")
     assert exc_info.value.status == 400
+
+
+async def test_view_follows_scroll(frt: FrtClient):
+    for i in range(30):
+        await _run(frt, f"say fill {i}")
+    # To the end first: (xterm stops following output after the alt-screen
+    # test, whose screen had fewer lines.)
+    await frt.scroll("key", "terminal_view", dy=-2000)
+    buf = await frt.terminal_buffer()
+    view = buf["view"]
+    assert view["last"] == buf["lineCount"] - 1 == buf["cursor"]["line"]
+    rows = view["last"] - view["first"] + 1
+    assert 1 <= rows <= buf["height"]
+
+    # A drag down shows earlier lines; the buffer is no different.
+    await frt.scroll("key", "terminal_view", dy=40)
+    up = await frt.terminal_buffer()
+    assert up["view"]["first"] < view["first"]
+    assert up["view"]["last"] - up["view"]["first"] + 1 in (rows - 1, rows)
+    assert up["lines"] == buf["lines"]
+
+    # And a long drag up goes back to the end.
+    await frt.scroll("key", "terminal_view", dy=-2000)
+    down = await frt.terminal_buffer()
+    assert down["view"] == view

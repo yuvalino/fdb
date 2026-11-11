@@ -115,9 +115,11 @@ wide character takes one place, not two), `wrapped` (`wrapped[i]`: row `i`
 continues the row before it, which ran past the edge), `text` (the rows with
 soft wraps undone, joined with newlines), `cursor` (`x`, `line` in the
 buffer, `y` in view), `width`, `height`, `lineCount`, `scrollBack` (rows
-above the view), `first` (the buffer line of `lines[0]`) and `altBuffer`
+above the view), `first` (the buffer line of `lines[0]`), `altBuffer`
 (whether a full-screen program such as vim switched to the alternate
-screen). `screen: true` keeps only the rows in view; `from` drops rows
+screen) and `view` (`first` and `last`: the buffer lines drawn whole where
+the view is scrolled to, as of the next frame; null when the widget isn't
+laid out). `screen: true` keeps only the rows in view; `from` drops rows
 before that buffer line. `/terminal-wait` matches against the same `text`,
 with `^` and `$` at line ends, and answers the `match`, its `groups`, and the
 `screen` as it ended. To wait for a command's output only, start `from` the

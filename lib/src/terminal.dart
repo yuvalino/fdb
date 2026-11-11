@@ -13,6 +13,13 @@ class TerminalHandle {
 
   final dynamic _terminal;
 
+  /// Where the terminal is drawn, when its widget draws it (TerminalView
+  /// does): the render box, which has `lineHeight`, and the scroll position
+  /// of the scrollable it sits in.
+  RenderBox? _box;
+  ScrollPosition? _scroll;
+  EdgeInsets _padding = EdgeInsets.zero;
+
   static TerminalHandle? _of(Widget widget) {
     try {
       final dynamic terminal = (widget as dynamic).terminal;
@@ -32,16 +39,83 @@ class TerminalHandle {
   /// that has one.
   static TerminalHandle find(Element element) {
     TerminalHandle? found;
+    Element? at;
     void visit(Element e) {
       if (found != null) return;
       found = _of(e.widget);
-      if (found == null) e.visitChildren(visit);
+      if (found != null) {
+        at = e;
+      } else {
+        e.visitChildren(visit);
+      }
     }
 
     visit(element);
-    return found ??
+    final handle = found ??
         (throw FrtException(409, 'not_terminal',
             'No xterm terminal at or under ${element.widget.runtimeType}'));
+    handle._findView(at!);
+    return handle;
+  }
+
+  /// The first scrollable under [element], and the box under it that draws
+  /// terminal lines (one with a `lineHeight`), with the padding it insets
+  /// its rows by (TerminalView's is the MediaQuery's).
+  void _findView(Element element) {
+    void visit(Element e) {
+      if (_box != null) return;
+      final widget = e.widget;
+      if (_scroll == null && widget is Scrollable && e is StatefulElement) {
+        final state = e.state;
+        if (state is ScrollableState) _scroll = state.position;
+      }
+      if (_scroll != null) {
+        final box = e.renderObject;
+        if (box is RenderBox && _lineHeightOf(box) != null) {
+          _box = box;
+          _padding = MediaQuery.maybePaddingOf(e) ?? EdgeInsets.zero;
+          return;
+        }
+      }
+      e.visitChildren(visit);
+    }
+
+    visit(element);
+  }
+
+  static double? _lineHeightOf(RenderBox box) {
+    try {
+      return ((box as dynamic).lineHeight as num).toDouble();
+    } on NoSuchMethodError {
+      return null;
+    } on TypeError {
+      return null;
+    }
+  }
+
+  /// The buffer lines drawn whole in the terminal's box at its scroll
+  /// position, first to last, or null when it isn't laid out.
+  ({int first, int last})? _view(int lineCount) {
+    final box = _box, scroll = _scroll;
+    if (box == null ||
+        scroll == null ||
+        !box.attached ||
+        !box.hasSize ||
+        !scroll.hasPixels ||
+        lineCount == 0) {
+      return null;
+    }
+    final lineHeight = _lineHeightOf(box);
+    if (lineHeight == null || lineHeight <= 0) return null;
+    // Line i is drawn from i * lineHeight + padding.top - pixels down.
+    const slack = 0.01;
+    final top = scroll.pixels - _padding.top;
+    var first = ((top - slack) / lineHeight).ceil();
+    var last = ((top + box.size.height + slack) / lineHeight).floor() - 1;
+    if (first < 0) first = 0;
+    if (last > lineCount - 1) last = lineCount - 1;
+    if (last < first) return null;
+    return (first: first, last: last);
   }
 
   /// Sends [text] to the program as typed input (`Terminal.textInput`), or
@@ -85,6 +159,7 @@ class TerminalHandle {
       cursorX: buffer.cursorX as int,
       cursorLine: buffer.absoluteCursorY as int,
       altBuffer: _terminal.isUsingAltBuffer as bool,
+      view: _view(count),
     );
   }
 
@@ -121,6 +196,7 @@ class TerminalSnapshot {
     required this.cursorX,
     required this.cursorLine,
     required this.altBuffer,
+    this.view,
   });
 
   /// Columns and rows in view.
@@ -150,6 +226,10 @@ class TerminalSnapshot {
   /// alternate screen.
   final bool altBuffer;
 
+  /// The buffer lines in view, drawn whole: where the view is scrolled to.
+  /// Null when the terminal's widget doesn't draw it or isn't laid out.
+  final ({int first, int last})? view;
+
   /// The lines with soft wraps undone, one string per line the program
   /// wrote, joined with newlines. A line wrapped from before [first] starts
   /// mid-way.
@@ -177,6 +257,7 @@ class TerminalSnapshot {
           'y': cursorLine - scrollBack,
         },
         'altBuffer': altBuffer,
+        'view': view == null ? null : {'first': view!.first, 'last': view!.last},
       };
 }
 

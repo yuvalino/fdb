@@ -20,6 +20,14 @@ Future<void> _nextFrame(Duration max) {
   return completer.future.whenComplete(timer.cancel);
 }
 
+/// Waits for the frame the app has scheduled, if any (for up to 100 ms), so
+/// what was laid out reflects the latest changes.
+Future<void> pendingFrame() async {
+  if (SchedulerBinding.instance.hasScheduledFrame) {
+    await _nextFrame(const Duration(milliseconds: 100));
+  }
+}
+
 /// The default cap on [settleFrames].
 const Duration defaultSettle = Duration(seconds: 1);
 

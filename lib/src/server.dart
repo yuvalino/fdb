@@ -327,6 +327,9 @@ class FrtServer {
     final query = _terminalQuery(body);
     final screen = _boolField(body, 'screen');
     final from = _intField(body, 'from') ?? 0;
+    // Output marks the view for layout; its scroll position (`view`) is
+    // the one that frame gives.
+    await pendingFrame();
     final terminal = TerminalHandle.find(_findOne(query));
     _jsonResponse(request, terminal.snapshot(screen: screen, from: from).toJson());
   }
