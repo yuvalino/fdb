@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frt/frt.dart';
+import 'package:xterm/xterm.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +33,7 @@ class _TestPageState extends State<TestPage> {
   final _items = List.generate(50, (i) => 'Item $i');
   bool _longPressed = false;
   final _readOnly = TextEditingController(text: 'fixed');
+  final _terminal = TestShell();
 
   @override
   void dispose() {
@@ -98,6 +100,13 @@ class _TestPageState extends State<TestPage> {
               ),
             ),
           ),
+          SizedBox(
+            height: 120,
+            child: TerminalView(
+              _terminal.terminal,
+              key: const Key('terminal_view'),
+            ),
+          ),
           Expanded(
             child: ListView.builder(
               key: const Key('scroll_list'),
@@ -111,5 +120,54 @@ class _TestPageState extends State<TestPage> {
         ],
       ),
     );
+  }
+}
+
+/// A terminal running a tiny line-based "shell" for the terminal tests: it
+/// echoes what is typed and, on Return, runs the line.
+///
+/// - `say <text>` prints the text.
+/// - `wide` prints "漢字x" (two double-width characters).
+/// - `alt` / `main` switch to and from the alternate screen.
+/// - Ctrl-C prints `^C`.
+///
+/// Each command ends with a fresh `> ` prompt.
+class TestShell {
+  TestShell() {
+    terminal.onOutput = _onInput;
+    terminal.write('> ');
+  }
+
+  final terminal = Terminal(maxLines: 1000);
+  String _line = '';
+
+  void _onInput(String data) {
+    for (final c in data.split('')) {
+      switch (c) {
+        case '\r':
+          terminal.write('\r\n');
+          _run(_line);
+          _line = '';
+          terminal.write('> ');
+        case '\x03':
+          terminal.write('^C\r\n> ');
+          _line = '';
+        default:
+          _line += c;
+          terminal.write(c);
+      }
+    }
+  }
+
+  void _run(String line) {
+    if (line.startsWith('say ')) {
+      terminal.write('${line.substring(4)}\r\n');
+    } else if (line == 'wide') {
+      terminal.write('漢字x\r\n');
+    } else if (line == 'alt') {
+      terminal.write('\x1b[?1049h');
+    } else if (line == 'main') {
+      terminal.write('\x1b[?1049l');
+    }
   }
 }

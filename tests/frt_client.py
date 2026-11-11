@@ -252,6 +252,92 @@ class FrtClient:
             408, "timeout", f"Widget {by}={value} still present after {timeout}ms"
         )
 
+    # --- Terminals ---
+    #
+    # Each takes the terminal's widget by key (``key``), or by the usual
+    # query (``by``/``value``/``index``) at or above it.
+
+    @staticmethod
+    def _terminal_query(
+        key: str | None, by: str | None, value: str | None, index: int | None
+    ) -> dict:
+        if by is not None:
+            return _query(by, value or "", index)
+        return {"key": key or "terminal_view"}
+
+    async def terminal_buffer(
+        self,
+        key: str | None = None,
+        *,
+        by: str | None = None,
+        value: str | None = None,
+        index: int | None = None,
+        screen: bool = False,
+        start: int = 0,
+    ) -> dict:
+        """The terminal's lines, wrap flags, joined ``text``, cursor, size
+        and alt-screen state. ``screen`` keeps only the lines in view;
+        ``start`` drops buffer lines before that index."""
+        return await self._post(
+            "/terminal-buffer",
+            {
+                **self._terminal_query(key, by, value, index),
+                "screen": screen,
+                "from": start,
+            },
+        )
+
+    async def terminal_input(
+        self,
+        text: str,
+        key: str | None = None,
+        *,
+        by: str | None = None,
+        value: str | None = None,
+        index: int | None = None,
+        paste: bool = False,
+    ):
+        """Send ``text`` to the terminal's program as typed input, or as a
+        paste. Return is ``"\r"``; Ctrl-C is ``"\x03"``."""
+        await self._post(
+            "/terminal-input",
+            {
+                **self._terminal_query(key, by, value, index),
+                "text": text,
+                "paste": paste,
+            },
+        )
+
+    async def terminal_wait(
+        self,
+        text: str | None = None,
+        key: str | None = None,
+        *,
+        pattern: str | None = None,
+        by: str | None = None,
+        value: str | None = None,
+        index: int | None = None,
+        timeout: int = 5000,
+        screen: bool = False,
+        start: int = 0,
+    ) -> dict:
+        """Wait until the terminal shows ``text``, or matches the regex
+        ``pattern`` (multi-line; soft wraps undone). Returns ``match`` and
+        ``groups``; raises FrtError with status 408 on timeout."""
+        body = {
+            **self._terminal_query(key, by, value, index),
+            "timeout": timeout,
+            "screen": screen,
+            "from": start,
+        }
+        if text is not None:
+            body["text"] = text
+        if pattern is not None:
+            body["pattern"] = pattern
+        return await self._post(
+            "/terminal-wait", body, timeout=timeout / 1000 + 30
+        )
+
     # --- Debug ---
 
     async def tree(self, depth: int = 50) -> dict:

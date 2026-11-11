@@ -8,9 +8,11 @@ async def test_scroll_reveals_item(frt: FrtClient):
     matches = await frt.find("key", "item_40")
     assert len(matches) == 0
 
-    # Scroll down significantly
-    await frt.scroll("key", "scroll_list", dy=-3000)
-
-    # Now item 40 should be findable
-    matches = await frt.find("key", "item_40")
+    # Scroll down in steps until it is built. (One long drag could fling
+    # past it in a short list.)
+    for _ in range(30):
+        await frt.scroll("key", "scroll_list", dy=-150)
+        matches = await frt.find("key", "item_40")
+        if matches:
+            break
     assert len(matches) > 0

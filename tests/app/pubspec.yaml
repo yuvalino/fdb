@@ -10,6 +10,8 @@ dependencies:
     sdk: flutter
   frt:
     path: ../../
+  # For the terminal tests; frt itself reaches xterm only dynamically.
+  xterm: ^4.0.0
 
 dev_dependencies:
   flutter_test:

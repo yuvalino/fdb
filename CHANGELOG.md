@@ -27,9 +27,15 @@
 - `by: text` matches a `Text` once instead of again through its `RichText`;
   `by: key, value: "null"` no longer matches keyless widgets; `/tree` shows
   text field contents.
+- Terminals: `/terminal-buffer` finds the terminal by any query, can keep
+  only the rows in view or from a line on, and answers soft-wrap flags, the
+  joined `text`, the cursor and the alt-screen state; a wide character no
+  longer gains a space after it. New `/terminal-input` types or pastes into
+  a terminal, and `/terminal-wait` waits for text or a regex.
 - Python client: re-reads the port file while connecting, closes its session
   on failure, takes `host`/`port`, uses `127.0.0.1`, and passes `index` on
-  every call (and `settle` on actions).
+  every call (and `settle` on actions), and has methods for the terminal
+  endpoints.
 
 ## 0.1.0
 

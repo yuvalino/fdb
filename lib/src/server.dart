@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart' show Element;
 import 'actions.dart';
 import 'errors.dart';
 import 'finder.dart';
+import 'terminal.dart';
 import 'tree_dump.dart';
 import 'waiter.dart';
 
@@ -92,6 +93,8 @@ class FrtServer {
     '/wait': ('POST', _handleWait),
     '/tree': ('GET', _handleTree),
     '/terminal-buffer': ('POST', _handleTerminalBuffer),
+    '/terminal-input': ('POST', _handleTerminalInput),
+    '/terminal-wait': ('POST', _handleTerminalWait),
   };
 
   Future<void> _handleRequest(HttpRequest request) async {
@@ -283,47 +286,90 @@ class FrtServer {
     _jsonResponse(request, {'tree': tree});
   }
 
+  /// The terminal a request names: by the usual query, or by `key` alone
+  /// (default `terminal_view`), the widget at or under the match.
+  FindQuery _terminalQuery(Map<String, dynamic> body) {
+    if (body.containsKey('by')) return _parseQuery(body);
+    final key = _field<String>(body, 'key', 'a string') ?? 'terminal_view';
+    return FindQuery(by: 'key', value: key);
+  }
+
+  static bool _boolField(Map<String, dynamic> body, String name) =>
+      _field<bool>(body, name, 'true or false') ?? false;
+
   Future<void> _handleTerminalBuffer(HttpRequest request) async {
     final body = await _readJsonBody(request);
-    final key = _field<String>(body, 'key', 'a string') ?? 'terminal_view';
+    final query = _terminalQuery(body);
+    final screen = _boolField(body, 'screen');
+    final from = _intField(body, 'from') ?? 0;
+    final terminal = TerminalHandle.find(_findOne(query));
+    _jsonResponse(request, terminal.snapshot(screen: screen, from: from).toJson());
+  }
 
-    final element = findOneElement(FindQuery(by: 'key', value: key));
-    if (element == null) {
-      throw FrtException(404, 'not_found', 'No widget with key "$key" found');
+  Future<void> _handleTerminalInput(HttpRequest request) async {
+    final body = await _readJsonBody(request);
+    final query = _terminalQuery(body);
+    final text = _field<String>(body, 'text', 'a string');
+    if (text == null) throw FrtException.badRequest('Missing "text" field');
+    final paste = _boolField(body, 'paste');
+    // In the gesture queue, so input and taps reach the app in the order
+    // they were sent.
+    await _serialised(() async {
+      TerminalHandle.find(_findOne(query)).input(text, paste: paste);
+    });
+    _jsonResponse(request, {'ok': true});
+  }
+
+  Future<void> _handleTerminalWait(HttpRequest request) async {
+    final body = await _readJsonBody(request);
+    final query = _terminalQuery(body);
+    final text = _field<String>(body, 'text', 'a string');
+    final source = _field<String>(body, 'pattern', 'a string');
+    if ((text == null) == (source == null)) {
+      throw FrtException.badRequest('Give one of "text" and "pattern"');
     }
-
+    final RegExp pattern;
     try {
-      // Access xterm's TerminalView.terminal via dynamic dispatch so FRT
-      // doesn't need a compile-time dependency on the xterm package.
-      final dynamic widget = element.widget;
-      final dynamic terminal = widget.terminal;
-      final int width = terminal.viewWidth as int;
-      final int height = terminal.viewHeight as int;
-      final dynamic buffer = terminal.buffer;
-      final int lineCount = buffer.lines.length as int;
-
-      final lines = <String>[];
-      for (int i = 0; i < lineCount; i++) {
-        final dynamic line = buffer.lines[i];
-        final int trimLen = line.getTrimmedLength(width) as int;
-        final buf = StringBuffer();
-        for (int c = 0; c < trimLen; c++) {
-          final int cp = line.getCodePoint(c) as int;
-          buf.writeCharCode(cp == 0 ? 0x20 : cp);
-        }
-        lines.add(buf.toString());
-      }
-
-      _jsonResponse(request, {
-        'width': width,
-        'height': height,
-        'lines': lines,
-        'lineCount': lineCount,
-      });
-    } catch (e) {
-      throw FrtException(
-          500, 'internal', 'Failed to read terminal buffer: $e');
+      pattern = RegExp(source ?? RegExp.escape(text!), multiLine: true);
+    } on FormatException catch (e) {
+      throw FrtException.badRequest('"pattern" is not a valid regex: ${e.message}');
     }
+    final timeout = _msField(body, 'timeout', _maxTimeoutMs) ?? 5000;
+    final screen = _boolField(body, 'screen');
+    final from = _intField(body, 'from') ?? 0;
+    final result = await waitForTerminal(
+      () => TerminalHandle.find(_findOne(query)),
+      pattern,
+      timeoutMs: timeout,
+      screen: screen,
+      from: from,
+    );
+    final match = result.match;
+    final snapshot = result.snapshot;
+    _jsonResponse(
+      request,
+      {
+        'found': result.found,
+        'elapsed_ms': result.elapsedMs,
+        if (match != null) ...{
+          'match': match.group(0),
+          'groups': [
+            for (var i = 1; i <= match.groupCount; i++) match.group(i),
+          ],
+        },
+        // The screen as it was at the end, to show what came instead.
+        'screen': snapshot.lines.length > snapshot.height
+            ? snapshot.lines.sublist(snapshot.lines.length - snapshot.height)
+            : snapshot.lines,
+        if (match == null) ...{
+          'error': 'timeout',
+          'message': 'The terminal at $query showed no '
+              '${text != null ? '"$text"' : 'match for /$source/'} '
+              'after ${timeout}ms',
+        },
+      },
+      status: result.found ? 200 : 408,
+    );
   }
 
   void _jsonResponse(

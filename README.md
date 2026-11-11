@@ -20,8 +20,8 @@ including release builds made by your own build system, and a test is just HTTP
 requests from any language. The repository also has a Python client and a
 pytest suite in `tests/` (they aren't part of the pub package).
 
-It can also read the screen of an [xterm](https://pub.dev/packages/xterm)
-`TerminalView`, for testing terminal apps.
+It also drives [xterm](https://pub.dev/packages/xterm) terminals, for testing
+terminal apps: type into one, read its screen, and wait for output.
 
 ## Getting Started
 
@@ -100,13 +100,33 @@ so lower `settle` when that slows a test down.
 | `POST /long-press` | `by`, `value`, `index`, `settle`, `duration` | Holds for `duration` ms (default 600, at most 60000) |
 | `POST /wait` | `by`, `value`, `index`, `timeout` | Waits up to `timeout` ms (default 5000, at most 600000) for a match; 408 if none |
 | `GET /tree?depth=` | | The widget tree (default depth 50) |
-| `POST /terminal-buffer` | `key` | An xterm `TerminalView`'s lines and size (default key `terminal_view`) |
+| `POST /terminal-buffer` | terminal, `screen`, `from` | The terminal's lines, below |
+| `POST /terminal-input` | terminal, `text`, `paste` | Sends `text` to the program as typed (Return is `"\r"`, Ctrl-C `"\u0003"`), or as a paste |
+| `POST /terminal-wait` | terminal, `text` or `pattern`, `timeout`, `screen`, `from` | Waits up to `timeout` ms (default 5000) until the terminal shows `text` or matches the regex `pattern`; 408 if not |
+
+The terminal endpoints take a terminal by `key` (default `terminal_view`), or
+by `by`/`value`/`index`; the matched widget, or the first under it, must have
+an xterm `Terminal` in its `terminal` field, as `TerminalView` does. frt
+reaches it dynamically, so it doesn't depend on xterm.
+
+`/terminal-buffer` answers `lines` (each row up to its last character; a
+wide character takes one place, not two), `wrapped` (`wrapped[i]`: row `i`
+continues the row before it, which ran past the edge), `text` (the rows with
+soft wraps undone, joined with newlines), `cursor` (`x`, `line` in the
+buffer, `y` in view), `width`, `height`, `lineCount`, `scrollBack` (rows
+above the view), `first` (the buffer line of `lines[0]`) and `altBuffer`
+(whether a full-screen program such as vim switched to the alternate
+screen). `screen: true` keeps only the rows in view; `from` drops rows
+before that buffer line. `/terminal-wait` matches against the same `text`,
+with `^` and `$` at line ends, and answers the `match`, its `groups`, and the
+`screen` as it ended. To wait for a command's output only, start `from` the
+line after the one the cursor was on when it was typed.
 
 Errors come back as `{"error": ..., "message": ...}` with a 4xx or 5xx status:
 400 for a malformed request, 404 when no widget matches, 405 for the wrong
 method, 408 for a `/wait` timeout, 413 for a body over 1 MiB, and 409 when an
 action can't be done: `not_hittable`, `not_editable` (no text field there, or
-a read-only one), `not_mounted`, `no_box` or `no_view`.
+a read-only one), `not_terminal`, `not_mounted`, `no_box` or `no_view`.
 
 ## Python client
 
