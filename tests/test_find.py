@@ -12,8 +12,10 @@ async def test_find_by_key(frt: FrtClient):
 
 
 async def test_find_by_text(frt: FrtClient):
+    # A Text matches once, not again through the RichText it builds.
     matches = await frt.find("text", "Ready")
-    assert len(matches) >= 1
+    assert len(matches) == 1
+    assert matches[0]["type"] == "Text"
 
 
 async def test_find_by_type(frt: FrtClient):
@@ -44,3 +46,14 @@ async def test_find_multiple(frt: FrtClient):
     matches = await frt.find("type", "ListTile")
     # Some should be rendered (visible ones)
     assert len(matches) > 0
+
+
+async def test_find_index(frt: FrtClient):
+    every = await frt.find("type", "ListTile")
+    second = await frt.find("type", "ListTile", index=1)
+    assert second == [every[1]]
+    assert await frt.find("type", "ListTile", index=len(every)) == []
+
+
+async def test_find_key_null_matches_nothing(frt: FrtClient):
+    assert await frt.find("key", "null") == []

@@ -2,7 +2,7 @@ name: frt
 description: >-
   Flutter Release Tests. Drive a running Flutter app, release builds included,
   over HTTP: find widgets, tap, type, scroll, wait, and read xterm terminals.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/yuvalino/frt
 issue_tracker: https://github.com/yuvalino/frt/issues
 topics:

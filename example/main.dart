@@ -5,7 +5,7 @@ import 'package:frt/frt.dart';
 /// the app from outside, for example:
 ///
 /// ```sh
-/// curl -X POST localhost:$(cat /tmp/frt_port)/tap \
+/// curl -X POST 127.0.0.1:$(cat /tmp/frt_port)/tap \
 ///      -d '{"by": "key", "value": "go"}'
 /// ```
 void main() {

@@ -1,3 +1,34 @@
+## 0.2.0
+
+- **Breaking:** listens on loopback by default; pass
+  `initFrt(address: InternetAddress.anyIPv4)` to drive the app from another
+  machine. The CORS header is gone.
+- **Breaking:** `/tap` is a real pointer tap at the widget's centre instead of
+  calling the first tap handler found near it, and gestures that wouldn't
+  reach their widget fail with 409.
+- `initFrt()` returns a future and takes `portFile`. The port file is written
+  after the server listens, atomically, and defaults to the app's temporary
+  directory on iOS and Android. A failed write is logged instead of stopping
+  the server.
+- `/wait` answers 408 on timeout, checks at least once, and times out even
+  when the app produces no frames. Actions settle until the app stops
+  scheduling frames, for up to `settle` ms (default 1000), instead of for at
+  most 10 frames. `duration` and `timeout` are capped.
+- Taps work on touch devices (the pointer had no button). Scrolls are touch
+  drags, which desktop lists accept. Gestures go to the widget's own view
+  with their own device id, and run one at a time.
+- `/enter-text` goes through the field like typing: `onChanged` fires and
+  input formatters apply. It also works when matched on the `EditableText`,
+  and refuses read-only fields.
+- Malformed requests answer 400 instead of 500, wrong methods 405, oversized
+  bodies 413. Negative `index` is a 400.
+- `by: text` matches a `Text` once instead of again through its `RichText`;
+  `by: key, value: "null"` no longer matches keyless widgets; `/tree` shows
+  text field contents.
+- Python client: re-reads the port file while connecting, closes its session
+  on failure, takes `host`/`port`, uses `127.0.0.1`, and passes `index` on
+  every call (and `settle` on actions).
+
 ## 0.1.0
 
 - First release: an HTTP server in the app (`initFrt()`) with `/ping`,

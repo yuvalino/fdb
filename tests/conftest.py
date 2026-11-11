@@ -3,7 +3,9 @@
 Launches the pre-built test app and provides an async FRT client fixture.
 
 Build the test app first:
-    cd tests/app && flutter create --platforms=linux . && flutter build linux --debug
+    cd tests/app && flutter build linux --debug
+
+The app's output goes to frt_test_app.log in the temporary directory.
 
 Then run tests:
     cd tests && python3 -m pytest -v -s
@@ -11,7 +13,6 @@ Then run tests:
 
 import os
 import subprocess
-import sys
 import tempfile
 
 import pytest
@@ -22,10 +23,16 @@ from frt_client import FrtClient
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_APP_DIR = os.path.join(TESTS_DIR, "app")
 PORT_FILE = os.path.join(tempfile.gettempdir(), "frt_test_port")
+APP_LOG = os.path.join(tempfile.gettempdir(), "frt_test_app.log")
 
 
 def _find_binary():
-    """Find the built test_app binary (debug or release)."""
+    """Find the built test_app binary (debug or release), or the one named
+    by $FRT_TEST_APP (for a build on another platform)."""
+    override = os.environ.get("FRT_TEST_APP")
+    if override:
+        override = os.path.abspath(override)
+        return override, os.path.dirname(override)
     for mode in ("debug", "release"):
         bundle_dir = os.path.join(
             TEST_APP_DIR, "build", "linux", "x64", mode, "bundle"
@@ -49,18 +56,20 @@ def app_process():
     if binary is None:
         pytest.exit(
             "test app binary not found. Build it first:\n"
-            "  cd tests/app && flutter create --platforms=linux . "
-            "&& flutter build linux --debug",
+            "  cd tests/app && flutter build linux --debug",
             returncode=1,
         )
 
     env = {**os.environ, "FRT_PORT_FILE": PORT_FILE}
+    # The app's output goes to a file: a pipe nobody reads fills up and
+    # blocks the app once it has logged a few dozen KB.
+    log = open(APP_LOG, "wb")
     proc = subprocess.Popen(
         [binary],
         cwd=bundle_dir,
         env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=log,
+        stderr=subprocess.STDOUT,
     )
 
     yield proc
@@ -71,6 +80,7 @@ def app_process():
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait()
+    log.close()
 
     if os.path.exists(PORT_FILE):
         os.remove(PORT_FILE)

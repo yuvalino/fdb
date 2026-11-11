@@ -15,16 +15,11 @@ Map<String, dynamic> _dumpElement(Element element, int depth, int maxDepth) {
     'type': widget.runtimeType.toString(),
   };
 
-  // Key
-  final key = widget.key;
-  if (key is ValueKey) {
-    result['key'] = key.value.toString();
-  } else if (key != null) {
-    result['key'] = key.toString();
-  }
+  final key = keyString(widget.key);
+  if (key != null) result['key'] = key;
 
   // Direct text
-  final text = _extractDirectText(element);
+  final text = extractDirectText(element);
   if (text != null && text.isNotEmpty) {
     result['text'] = text;
   }
@@ -47,15 +42,4 @@ Map<String, dynamic> _dumpElement(Element element, int depth, int maxDepth) {
   }
 
   return result;
-}
-
-String? _extractDirectText(Element element) {
-  final widget = element.widget;
-  if (widget is Text) {
-    return widget.data ?? widget.textSpan?.toPlainText();
-  }
-  if (widget is RichText) {
-    return widget.text.toPlainText();
-  }
-  return null;
 }

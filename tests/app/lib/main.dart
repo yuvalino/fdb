@@ -31,6 +31,13 @@ class _TestPageState extends State<TestPage> {
   String _input = '';
   final _items = List.generate(50, (i) => 'Item $i');
   bool _longPressed = false;
+  final _readOnly = TextEditingController(text: 'fixed');
+
+  @override
+  void dispose() {
+    _readOnly.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,15 +63,27 @@ class _TestPageState extends State<TestPage> {
             ),
           ),
           Text(_input, key: const Key('input_echo')),
+          TextField(
+            key: const Key('readonly_field'),
+            controller: _readOnly,
+            readOnly: true,
+          ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton(
               key: const Key('delayed_btn'),
               onPressed: () async {
                 await Future.delayed(const Duration(seconds: 2));
-                if (mounted) setState(() => _status = 'Delayed');
+                if (mounted) setState(() => _status = 'Delayed done');
               },
               child: const Text('Delayed'),
+            ),
+          ),
+          IgnorePointer(
+            child: TextButton(
+              key: const Key('ignored_btn'),
+              onPressed: () => setState(() => _status = 'Ignored tapped'),
+              child: const Text('Ignored'),
             ),
           ),
           Padding(
