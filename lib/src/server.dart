@@ -7,15 +7,15 @@ import 'actions.dart';
 import 'waiter.dart';
 import 'tree_dump.dart';
 
-class FdbServer {
-  static FdbServer? _instance;
+class FrtServer {
+  static FrtServer? _instance;
   late HttpServer _httpServer;
 
-  FdbServer._();
+  FrtServer._();
 
   static Future<void> start() async {
     if (_instance != null) return;
-    _instance = FdbServer._();
+    _instance = FrtServer._();
     await _instance!._bind();
   }
 
@@ -24,11 +24,11 @@ class FdbServer {
     final port = _httpServer.port;
 
     final portFilePath =
-        Platform.environment['FDB_PORT_FILE'] ?? '/tmp/fdb_port';
+        Platform.environment['FRT_PORT_FILE'] ?? '/tmp/frt_port';
     File(portFilePath).writeAsStringSync('$port');
 
     // ignore: avoid_print
-    print('[fdb] listening on port $port (written to $portFilePath)');
+    print('[frt] listening on port $port (written to $portFilePath)');
     _httpServer.listen(_handleRequest);
   }
 
@@ -201,7 +201,7 @@ class FdbServer {
     }
 
     try {
-      // Access xterm's TerminalView.terminal via dynamic dispatch so FDB
+      // Access xterm's TerminalView.terminal via dynamic dispatch so FRT
       // doesn't need a compile-time dependency on the xterm package.
       final dynamic widget = element.widget;
       final dynamic terminal = widget.terminal;

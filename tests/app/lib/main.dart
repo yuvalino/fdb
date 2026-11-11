@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:fdb/fdb.dart';
+import 'package:frt/frt.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  initFdb();
+  initFrt();
   runApp(const TestApp());
 }
 
@@ -13,7 +13,7 @@ class TestApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FDB Test App',
+      title: 'FRT Test App',
       home: const TestPage(),
     );
   }
@@ -35,7 +35,7 @@ class _TestPageState extends State<TestPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('FDB Test')),
+      appBar: AppBar(title: const Text('FRT Test')),
       body: Column(
         children: [
           Padding(

@@ -1,9 +1,8 @@
-"""Pytest configuration for FDB integration tests.
+"""Pytest configuration for FRT integration tests.
 
-Launches the pre-built test app and provides an async FDB client fixture.
+Launches the pre-built test app and provides an async FRT client fixture.
 
 Build the test app first:
-    source ~/development/bialik-monorepo/mobile/env.sh
     cd tests/app && flutter create --platforms=linux . && flutter build linux --debug
 
 Then run tests:
@@ -18,11 +17,11 @@ import tempfile
 import pytest
 import pytest_asyncio
 
-from fdb_client import FdbClient
+from frt_client import FrtClient
 
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_APP_DIR = os.path.join(TESTS_DIR, "app")
-PORT_FILE = os.path.join(tempfile.gettempdir(), "fdb_test_port")
+PORT_FILE = os.path.join(tempfile.gettempdir(), "frt_test_port")
 
 
 def _find_binary():
@@ -31,7 +30,7 @@ def _find_binary():
         bundle_dir = os.path.join(
             TEST_APP_DIR, "build", "linux", "x64", mode, "bundle"
         )
-        binary = os.path.join(bundle_dir, "fdb_test_app")
+        binary = os.path.join(bundle_dir, "frt_test_app")
         if os.path.exists(binary):
             return binary, bundle_dir
     return None, None
@@ -55,7 +54,7 @@ def app_process():
             returncode=1,
         )
 
-    env = {**os.environ, "FDB_PORT_FILE": PORT_FILE}
+    env = {**os.environ, "FRT_PORT_FILE": PORT_FILE}
     proc = subprocess.Popen(
         [binary],
         cwd=bundle_dir,
@@ -78,9 +77,9 @@ def app_process():
 
 
 @pytest_asyncio.fixture(scope="session")
-async def fdb(app_process):
-    """Async FDB client connected to running test app."""
-    client = FdbClient(port_file=PORT_FILE)
+async def frt(app_process):
+    """Async FRT client connected to running test app."""
+    client = FrtClient(port_file=PORT_FILE)
     await client.connect(timeout=30)
     yield client
     await client.close()

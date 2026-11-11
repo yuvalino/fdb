@@ -1,4 +1,4 @@
-"""Flutter Debug Bridge async Python client."""
+"""Flutter Release Tests async Python client."""
 
 import asyncio
 import os
@@ -6,8 +6,8 @@ import os
 import aiohttp
 
 
-class FdbError(Exception):
-    """Error from FDB server."""
+class FrtError(Exception):
+    """Error from FRT server."""
 
     def __init__(self, status: int, error: str, message: str):
         self.status = status
@@ -16,14 +16,14 @@ class FdbError(Exception):
         super().__init__(f"[{status}] {error}: {message}")
 
 
-class FdbClient:
-    """Async HTTP client for Flutter Debug Bridge.
+class FrtClient:
+    """Async HTTP client for Flutter Release Tests.
 
     Mirrors WidgetTester semantics: find widgets, tap, enter text, scroll,
     wait for conditions. All actions settle frames before returning.
     """
 
-    def __init__(self, port_file: str = "/tmp/fdb_port"):
+    def __init__(self, port_file: str = "/tmp/frt_port"):
         self._port_file = port_file
         self._port: int | None = None
         self._session: aiohttp.ClientSession | None = None
@@ -58,7 +58,7 @@ class FdbClient:
                 pass
             await asyncio.sleep(0.2)
 
-        raise TimeoutError(f"FDB server not responding on port {self._port}")
+        raise TimeoutError(f"FRT server not responding on port {self._port}")
 
     async def close(self):
         if self._session:
@@ -70,7 +70,7 @@ class FdbClient:
         async with self._session.post(path, json=body) as resp:
             data = await resp.json()
             if resp.status >= 400:
-                raise FdbError(
+                raise FrtError(
                     resp.status,
                     data.get("error", "unknown"),
                     data.get("message", ""),
@@ -82,7 +82,7 @@ class FdbClient:
         async with self._session.get(path, params=params) as resp:
             data = await resp.json()
             if resp.status >= 400:
-                raise FdbError(
+                raise FrtError(
                     resp.status,
                     data.get("error", "unknown"),
                     data.get("message", ""),
@@ -100,9 +100,9 @@ class FdbClient:
         """Find exactly one widget. Raises if 0 or >1."""
         matches = await self.find(by, value)
         if len(matches) == 0:
-            raise FdbError(404, "not_found", f"No widget: {by}={value}")
+            raise FrtError(404, "not_found", f"No widget: {by}={value}")
         if len(matches) > 1:
-            raise FdbError(
+            raise FrtError(
                 400,
                 "ambiguous",
                 f"Found {len(matches)} matches for {by}={value}",
@@ -146,7 +146,7 @@ class FdbClient:
             "/wait", {"by": by, "value": value, "timeout": timeout}
         )
         if not data["found"]:
-            raise FdbError(
+            raise FrtError(
                 408, "timeout", f"Widget {by}={value} not found in {timeout}ms"
             )
         return data["matches"]
@@ -161,7 +161,7 @@ class FdbClient:
             if len(matches) == 0:
                 return
             await asyncio.sleep(0.1)
-        raise FdbError(
+        raise FrtError(
             408, "timeout", f"Widget {by}={value} still present after {timeout}ms"
         )
 

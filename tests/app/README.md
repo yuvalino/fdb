@@ -1,6 +1,6 @@
-# fdb_test_app
+# frt_test_app
 
-A new Flutter project.
+The app the Python tests drive (see `../conftest.py`).
 
 ## Getting Started
 

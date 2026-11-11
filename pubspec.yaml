@@ -1,11 +1,22 @@
-name: fdb
-description: Flutter Debug Bridge. HTTP remote test driver for Flutter apps.
-version: 0.0.1
-publish_to: none
+name: frt
+description: >-
+  Flutter Release Tests. Drive a running Flutter app, release builds included,
+  over HTTP: find widgets, tap, type, scroll, wait, and read xterm terminals.
+version: 0.1.0
+repository: https://github.com/yuvalino/frt
+issue_tracker: https://github.com/yuvalino/frt/issues
+topics:
+  - testing
+  - integration-test
+  - automation
 
 environment:
   sdk: ^3.11.0
+  flutter: ">=3.41.0"
 
 dependencies:
   flutter:
     sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0

@@ -2,23 +2,23 @@
 
 import pytest
 
-from fdb_client import FdbClient, FdbError
+from frt_client import FrtClient, FrtError
 
 
-async def test_wait_for_existing(fdb: FdbClient):
+async def test_wait_for_existing(frt: FrtClient):
     # Widget already exists — should return immediately
-    matches = await fdb.wait_for("key", "tap_btn", timeout=1000)
+    matches = await frt.wait_for("key", "tap_btn", timeout=1000)
     assert len(matches) >= 1
 
 
-async def test_wait_for_delayed(fdb: FdbClient):
+async def test_wait_for_delayed(frt: FrtClient):
     # Tap the delayed button — status changes to "Delayed" after 2s
-    await fdb.tap("key", "delayed_btn")
-    matches = await fdb.wait_for("text", "Delayed", timeout=5000)
+    await frt.tap("key", "delayed_btn")
+    matches = await frt.wait_for("text", "Delayed", timeout=5000)
     assert len(matches) > 0
 
 
-async def test_wait_timeout(fdb: FdbClient):
-    with pytest.raises(FdbError) as exc_info:
-        await fdb.wait_for("text", "This Will Never Appear", timeout=500)
+async def test_wait_timeout(frt: FrtClient):
+    with pytest.raises(FrtError) as exc_info:
+        await frt.wait_for("text", "This Will Never Appear", timeout=500)
     assert exc_info.value.status == 408
